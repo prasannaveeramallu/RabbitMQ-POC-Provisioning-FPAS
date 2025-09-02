@@ -23,9 +23,13 @@ public class ProvisionController {
 
     @PostMapping
     public ResponseEntity<?> provisionResources(@RequestBody ProvisionRequest request) {
+
+        //validating that its not empty
         if (request.getResources() == null || request.getResources().size() == 0) {
             return ResponseEntity.badRequest().body("No resources specified.");
         }
+
+        //validating that there are only 5 resources
         if (request.getResources().size() > MAX_RESOURCES) {
             return ResponseEntity.badRequest().body("Maximum 5 resources allowed per request.");
         }

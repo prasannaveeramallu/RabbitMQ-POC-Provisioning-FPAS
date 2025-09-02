@@ -224,19 +224,24 @@ public class ProvisioningService {
     //VM
     private Map<String, Object> provisionAzureVM(Map<String, Object> config) {
         try {
+            Dotenv dotenv = Dotenv.load();
+            String clientId = dotenv.get("AZURE_CLIENT_ID");
+            String clientSecret = dotenv.get("AZURE_CLIENT_SECRET");
+            String tenantId = dotenv.get("AZURE_TENANT_ID");
+            String subscriptionId = dotenv.get("AZURE_SUBSCRIPTION_ID");
             ClientSecretCredential credential = new ClientSecretCredentialBuilder()
-                .clientId((String) config.get("clientId"))
-                .clientSecret((String) config.get("clientSecret"))
-                .tenantId((String) config.get("tenantId"))
+                .clientId(clientId)
+                .clientSecret(clientSecret)
+                .tenantId(tenantId)
                 .build();
             AzureProfile profile = new AzureProfile(
-                (String) config.get("tenantId"),
-                (String) config.get("subscriptionId"),
+                tenantId,
+                subscriptionId,
                 AzureEnvironment.AZURE
             );
             AzureResourceManager azure = AzureResourceManager
                 .authenticate(credential, profile)
-                .withSubscription((String) config.get("subscriptionId"));
+                .withSubscription(subscriptionId);
             
             //Azure doesn't need waiters as the create() method in azure has the same functionality
             //as waiters in aws sdk. It waits until the VM/other services are successfully created.
@@ -249,7 +254,7 @@ public class ProvisioningService {
                 .withPopularLinuxImage(KnownLinuxVirtualMachineImage.UBUNTU_SERVER_20_04_LTS)
                 .withRootUsername((String) config.get("adminUsername"))
                 .withRootPassword((String) config.get("adminPassword"))
-                .withSize(VirtualMachineSizeTypes.STANDARD_DS1_V2)
+                .withSize(VirtualMachineSizeTypes.STANDARD_B1S)
                 .create();
             return Map.of("status", "success", "vmId", vm.id());
         } catch (Exception e) {

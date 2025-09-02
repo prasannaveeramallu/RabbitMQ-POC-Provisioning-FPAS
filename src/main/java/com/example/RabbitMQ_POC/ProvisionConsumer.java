@@ -19,6 +19,7 @@ public class ProvisionConsumer {
     @RabbitListener(queues = "provisionQueue") //listens to the queue for any new msgs
     public void receiveMessage(String message) {
         
+        //send the resquest/msg to the thread
         executor.submit(() -> {
             try {
                 ProvisionRequest request = objectMapper.readValue(message, ProvisionRequest.class);
