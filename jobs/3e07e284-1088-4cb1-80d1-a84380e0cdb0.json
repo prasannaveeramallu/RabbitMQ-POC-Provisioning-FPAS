@@ -1,0 +1,1 @@
+{"resources":[{"type":"rds","config":{"masterUsername":"admin","dbInstanceIdentifier":"my-rds-instance","engine":"mysql","masterUserPassword":"Password123!","AllocatedStorage":20}}],"jobId":"3e07e284-1088-4cb1-80d1-a84380e0cdb0"}

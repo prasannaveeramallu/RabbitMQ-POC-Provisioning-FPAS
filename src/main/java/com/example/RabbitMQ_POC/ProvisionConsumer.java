@@ -2,31 +2,32 @@ package com.example.RabbitMQ_POC;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 @Component
 public class ProvisionConsumer {
-    @Autowired
-    private ProvisioningService provisioningService;
+    private static final Logger log = LoggerFactory.getLogger(ProvisionConsumer.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
-    //manage threads - for parallel request processing
-    private final ExecutorService executor = Executors.newFixedThreadPool(5); // max 5 parallel jobs
 
-    @RabbitListener(queues = "provisionQueue") //listens to the queue for any new msgs
+    @RabbitListener(queues = "provisionQueue")
     public void receiveMessage(String message) {
-        
-        //send the resquest/msg to the thread
-        executor.submit(() -> {
-            try {
-                ProvisionRequest request = objectMapper.readValue(message, ProvisionRequest.class);
-                provisioningService.handleProvisionRequest(request);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+        try {
+            ProvisionRequest request = objectMapper.readValue(message, ProvisionRequest.class);
+            Path dir = Paths.get("jobs");
+            Files.createDirectories(dir);
+            Path jobFile = dir.resolve(request.getJobId() + ".json");
+            Files.writeString(jobFile, message, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            log.info("Queued job {} with {} resources. Job file: {}", request.getJobId(), request.getResources() != null ? request.getResources().size() : 0, jobFile.toAbsolutePath());
+            DockerWorkerLauncher.launchAsync(jobFile, request.getJobId());
+        } catch (Exception e) {
+            log.error("Failed to process message", e);
+        }
     }
 }

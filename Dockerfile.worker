@@ -1,0 +1,27 @@
+# Multi-stage Dockerfile for provisioning worker
+# 1. Build stage: compile and shade worker jar
+FROM maven:3.9-eclipse-temurin-17 AS build
+ARG WORKER_VERSION=dev
+ARG GIT_COMMIT=unknown
+WORKDIR /workspace
+COPY pom.xml .
+COPY src ./src
+RUN mvn -q -DskipTests package
+
+# 2. Runtime stage: minimal JRE image
+FROM eclipse-temurin:17-jre-alpine
+ARG WORKER_VERSION=dev
+ARG GIT_COMMIT=unknown
+ENV WORKER_VERSION=$WORKER_VERSION \
+	WORKER_GIT_COMMIT=$GIT_COMMIT
+LABEL org.opencontainers.image.title="provision-worker" \
+	  org.opencontainers.image.version="$WORKER_VERSION" \
+	  org.opencontainers.image.revision="$GIT_COMMIT" \
+	  org.opencontainers.image.source="https://example.com/your-repo" \
+	  org.opencontainers.image.description="POC multi-cloud provisioning worker"
+WORKDIR /app
+RUN ls -l /app
+ENV JAVA_OPTS=""
+COPY --from=build /workspace/target/ProvisionWorker.jar /app/ProvisionWorker.jar
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar ProvisionWorker.jar $0 $@"]
+CMD ["/app/job.json"]

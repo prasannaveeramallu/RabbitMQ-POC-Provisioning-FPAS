@@ -1,0 +1,1 @@
+{"resources":[{"type":"s3","config":{"enableVersioning":true,"bucketName":"my-test-bucket-20250903122214"}}],"jobId":"3d835c0d-a0b8-4621-8216-b3e521a38f74"}
